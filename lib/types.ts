@@ -82,11 +82,22 @@ export interface OnboardingQuestion {
   id: string;
   question: string;
   emoji: string;
-  type: "choice" | "scale";
+  type: "choice" | "scale" | "text" | "number" | "date";
   options?: string[];
   scaleMin?: number;
   scaleMax?: number;
   scaleLabels?: [string, string];
+  contextKey?:
+    | "date"
+    | "location"
+    | "guest_count"
+    | "budget"
+    | "formality"
+    | "venue"
+    | "aesthetic"
+    | "service_level"
+    | "schedule"
+    | "other";
 }
 
 export interface StyleProposal {

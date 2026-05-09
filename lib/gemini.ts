@@ -129,17 +129,23 @@ Schema:
     "question": "Short friendly question (max 12 words)?",
     "emoji": "🎉",
     "type": "choice",
-    "options": ["Option A", "Option B", "Option C"]
+    "options": ["Option A", "Option B", "Option C"],
+    "scaleMin": 1,
+    "scaleMax": 10,
+    "scaleLabels": ["Low", "High"],
+    "contextKey": "budget"
   }
 ]
 
 Rules:
 - Exactly 5 questions
 - SPECIFIC to the event type, size, and stated goals — not generic
-- Mix: 2 choice questions (3-4 options each) + 3 scale questions
+- Mix: at least 2 choice questions (3-4 options each); the rest can be scale, text, number, or date
 - Cover: event formality, venue preference, style aesthetic, budget flexibility, DIY vs full-service
 - Tone: conversational, encouraging, exciting
-- Options must be meaningful and mutually exclusive`;
+- Options must be meaningful and mutually exclusive
+- If the prompt includes Missing Context Focus, prioritize those items and ensure at least 3 questions target them
+- Use contextKey to tag each question with ONE of: date, location, guest_count, budget, formality, venue, aesthetic, service_level, schedule, other`;
 
 // ─── STYLE PROPOSALS ─────────────────────────────────────────────────────────
 
@@ -233,6 +239,7 @@ export async function buildEventFromContext(
 export async function generateEventQuestions(
   eventDetails: string,
   apiKey: string,
+  contextFocus: string[] = [],
 ): Promise<OnboardingQuestion[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
@@ -240,7 +247,9 @@ export async function generateEventQuestions(
     systemInstruction: QUESTIONS_SYSTEM_PROMPT,
   });
   const result = await model.generateContent(
-    `Generate 5 personalized onboarding questions for this event:\n\n${eventDetails}`,
+    `Generate 5 personalized onboarding questions for this event:\n\n${eventDetails}\n\nMissing Context Focus: ${
+      contextFocus.length ? contextFocus.join(", ") : "none"
+    }`,
   );
   const text = result.response.text().trim();
   const clean = text

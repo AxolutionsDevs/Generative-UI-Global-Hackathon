@@ -17,6 +17,54 @@ import { ProgressNotification } from "./ProgressNotification";
 import { ThemeContext } from "./ThemeContext";
 import { LayoutSelector } from "./layouts/LayoutSelector";
 
+function detectMissingContext(details: string): string[] {
+  const text = details.toLowerCase();
+  const hasDate =
+    /(\b\d{1,2}[/-]\d{1,2}([/-]\d{2,4})?\b)|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/.test(
+      text
+    );
+  const hasGuests =
+    /guest|guests|attendee|attendees|invite|invited|people|personas|invitados|asistentes/.test(
+      text
+    );
+  const hasBudget = /budget|presupuesto|cost|costo|usd|mxn|eur|gbp|\$|k\b/.test(text);
+  const hasLocation =
+    /venue|location|place|hotel|hall|beach|garden|club|restaurant|city|address|lugar|ubicacion|salon/.test(
+      text
+    );
+  const hasAesthetic =
+    /theme|style|aesthetic|decor|vibe|color|colors|colores|estilo|tematica|tema/.test(
+      text
+    );
+  const hasFormality =
+    /formal|black tie|casual|semi-formal|dress code|etiqueta|informal|elegante/.test(
+      text
+    );
+  const hasService =
+    /planner|coordinator|full[- ]service|diy|do it yourself|self[- ]plan|organizer|organizadora/.test(
+      text
+    );
+  const hasSchedule = /schedule|timeline|agenda|programa|itinerary|itinerario/.test(text);
+
+  const missing: string[] = [];
+  if (!hasDate) missing.push("date");
+  if (!hasLocation) missing.push("location");
+  if (!hasGuests) missing.push("guest_count");
+  if (!hasBudget) missing.push("budget");
+  if (!hasFormality) missing.push("formality");
+  if (!hasAesthetic) missing.push("aesthetic");
+  if (!hasService) missing.push("service_level");
+  if (!hasSchedule) missing.push("schedule");
+
+  return missing;
+}
+
+function summarizePrompt(input: string, maxLen = 140) {
+  const trimmed = input.trim().replace(/\s+/g, " ");
+  if (trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, maxLen).trim()}...`;
+}
+
 export function EventView() {
   const { eventState, isLoaded, progressEvent, initEvent, completeTask, clearProgressEvent, toggleTaskItem, resetEvent } =
     useEventState();
@@ -33,6 +81,7 @@ export function EventView() {
   const [isLoadingThemes, setIsLoadingThemes] = useState(false);
   const [themeError, setThemeError] = useState("");
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
+  const [contextFocus, setContextFocus] = useState<string[]>([]);
 
   const [progressTaskId, setProgressTaskId] = useState<string | null>(null);
   const [progressText, setProgressText] = useState("");
@@ -105,8 +154,10 @@ export function EventView() {
     setIsLoadingQuestions(true);
     setGenerateError("");
     try {
+      const focus = detectMissingContext(detailsInput);
+      setContextFocus(focus);
       const detailedContext = `Event Type: ${eventType}\n${detailsInput}`;
-      const generatedQuestions = await generateEventQuestions(detailedContext, apiKey);
+      const generatedQuestions = await generateEventQuestions(detailedContext, apiKey, focus);
       setQuestions(generatedQuestions);
       setOnboardingStep("questions");
     } catch (err) {
@@ -165,6 +216,7 @@ export function EventView() {
     setQuestions([]);
     setThemeProposals([]);
     setQuestionAnswers({});
+    setContextFocus([]);
   };
 
   if (!isLoaded) return <div>Loading...</div>;
@@ -374,6 +426,9 @@ export function EventView() {
             questions={questions}
             isLoading={isLoadingThemes}
             error={themeError}
+            eventType={eventType}
+            promptSummary={summarizePrompt(detailsInput)}
+            contextFocus={contextFocus}
             onBack={() => setOnboardingStep("details")}
             onSubmit={handleQuestionsComplete}
           />
