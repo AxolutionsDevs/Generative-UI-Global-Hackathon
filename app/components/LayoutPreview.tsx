@@ -8,14 +8,10 @@ interface LayoutPreviewProps {
 }
 
 export function LayoutPreview({ proposal, isSelected }: LayoutPreviewProps) {
-  const skeletonMap: Record<string, React.ReactNode> = {
-    hacienda: <HaciendaSkeleton colors={proposal} />,
-    modern: <ModernSkeleton colors={proposal} />,
-    tropical: <TropicalSkeleton colors={proposal} />,
-    luxury: <LuxurySkeleton colors={proposal} />,
-    romantic: <RomanticSkeleton colors={proposal} />,
-    industrial: <IndustrialSkeleton colors={proposal} />,
-  };
+  const seed = hashString(
+    `${proposal.id}-${proposal.characterClass}-${proposal.primaryColor}-${proposal.accentColor}`
+  );
+  const layout = buildLayout(seed);
 
   return (
     <>
@@ -66,7 +62,7 @@ export function LayoutPreview({ proposal, isSelected }: LayoutPreviewProps) {
             } as React.CSSProperties
           }
         >
-          {skeletonMap[proposal.styleTemplate]}
+          <GeneratedPreview proposal={proposal} layout={layout} />
         </div>
         {isSelected && <div className="lp-selected-ring" />}
         {isSelected && <div className="lp-tint" />}
@@ -75,245 +71,172 @@ export function LayoutPreview({ proposal, isSelected }: LayoutPreviewProps) {
   );
 }
 
-function HaciendaSkeleton({ colors }: { colors: StyleProposal }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: colors.bgPrimary,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          background: `linear-gradient(90deg, ${colors.primaryColor}33, ${colors.accentColor}22)`,
-          padding: "10px",
-          borderBottom: `2px solid ${colors.primaryColor}44`,
-          textAlign: "center",
-          fontSize: "11px",
-          fontWeight: "bold",
-          color: colors.primaryColor,
-        }}
-      >
-        ✨ Hacienda Style
-      </div>
-      <div style={{ display: "flex", flex: 1, gap: "6px", padding: "10px" }}>
-        <div style={{ width: "35%", background: colors.bgSecondary, padding: "8px", borderRadius: "4px", borderLeft: `3px solid ${colors.primaryColor}`, fontSize: "7px" }}>
-          {["Venue", "Catering", "Decor"].map((cat) => (
-            <div key={cat} style={{ padding: "3px", marginBottom: "3px", background: colors.primaryColor + "15", borderRadius: "3px", color: colors.primaryColor, fontWeight: "600" }}>
-              {cat}
-            </div>
-          ))}
-        </div>
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ background: colors.bgSecondary, borderRadius: "4px", padding: "6px", borderTop: `3px solid ${colors.accentColor}` }}>
-              <div style={{ height: "3px", background: colors.primaryColor + "33", borderRadius: "2px", marginBottom: "3px" }} />
-              <div style={{ height: "2px", background: colors.primaryColor + "22", borderRadius: "1px" }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+function hashString(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
 }
 
-function ModernSkeleton({ colors }: { colors: StyleProposal }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: colors.bgPrimary,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          padding: "8px 10px",
-          borderBottom: `1px solid ${colors.primaryColor}22`,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: "10px",
-          fontWeight: "bold",
-        }}
-      >
-        <div style={{ color: colors.primaryColor }}>Dashboard</div>
-        <div style={{ color: "#666" }}>45%</div>
-      </div>
-      <div style={{ display: "flex", flex: 1, gap: "6px", padding: "8px" }}>
-        <div style={{ width: "30%", background: "#f9f9f9", padding: "6px", borderRadius: "4px", fontSize: "7px" }}>
-          {["Venue", "Catering", "Entertain"].map((cat, i) => (
-            <div key={cat} style={{ padding: "3px", marginBottom: "3px", background: i === 0 ? colors.primaryColor + "22" : "transparent", color: i === 0 ? colors.primaryColor : "#666", fontWeight: "600", borderRadius: "2px" }}>
-              {cat}
-            </div>
-          ))}
-        </div>
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px" }}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ background: "#fff", border: "1px solid #ddd", borderRadius: "3px", padding: "4px" }}>
-              <div style={{ height: "3px", background: colors.primaryColor + "33", borderRadius: "2px", marginBottom: "2px" }} />
-              <div style={{ height: "2px", background: colors.primaryColor + "22", borderRadius: "1px" }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+function buildLayout(seed: number) {
+  let current = seed || 1;
+  const rand = () => {
+    current = (current * 9301 + 49297) % 233280;
+    return current / 233280;
+  };
+
+  const sectionCount = 3 + Math.floor(rand() * 3);
+  const sections = Array.from({ length: sectionCount }, () => {
+    const roll = rand();
+    const type = roll < 0.34 ? "split" : roll < 0.68 ? "grid" : "stack";
+    return {
+      type,
+      emphasis: rand() > 0.65,
+      accent: rand() > 0.5,
+      blocks: 2 + Math.floor(rand() * 3),
+    };
+  });
+
+  return {
+    headerStyle: rand() > 0.5 ? "gradient" : "solid",
+    sections,
+  };
 }
 
-function TropicalSkeleton({ colors }: { colors: StyleProposal }) {
+function GeneratedPreview({
+  proposal,
+  layout,
+}: {
+  proposal: StyleProposal;
+  layout: { headerStyle: "gradient" | "solid"; sections: Array<{ type: string; emphasis: boolean; accent: boolean; blocks: number }> };
+}) {
+  const headerBg =
+    layout.headerStyle === "gradient"
+      ? `linear-gradient(90deg, ${proposal.primaryColor}, ${proposal.accentColor})`
+      : proposal.primaryColor;
+
   return (
     <div
       style={{
         width: "100%",
         height: "100%",
-        background: colors.bgPrimary,
+        background: proposal.bgPrimary,
+        color: "#111827",
         display: "flex",
         flexDirection: "column",
       }}
     >
       <div
         style={{
-          background: `linear-gradient(90deg, ${colors.primaryColor}, ${colors.accentColor})`,
-          padding: "10px",
-          textAlign: "center",
+          background: headerBg,
           color: "#fff",
-          fontSize: "10px",
-          fontWeight: "bold",
-        }}
-      >
-        🌴 Tropical Vibes 🎉
-      </div>
-      <div style={{ flex: 1, padding: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ background: colors.bgSecondary, borderRadius: "6px", padding: "8px", borderLeft: `4px solid ${colors.accentColor}` }}>
-            <div style={{ fontSize: "16px", marginBottom: "4px" }}>
-              {i === 1 ? "🏖️" : i === 2 ? "🍽️" : i === 3 ? "🎵" : "🎨"}
-            </div>
-            <div style={{ height: "3px", background: colors.primaryColor + "44", borderRadius: "2px", marginBottom: "3px" }} />
-            <div style={{ height: "2px", background: colors.primaryColor + "22", borderRadius: "1px" }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LuxurySkeleton({ colors }: { colors: StyleProposal }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: colors.bgPrimary,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          background: "linear-gradient(90deg, #1a1a1a, #2a2a2a)",
-          padding: "10px",
-          borderBottom: `3px solid ${colors.primaryColor}`,
-          textAlign: "center",
+          padding: "8px 10px",
           fontSize: "9px",
-          fontWeight: "bold",
-          color: colors.primaryColor,
-          letterSpacing: "1px",
-        }}
-      >
-        ◆ LUXURY ◆
-      </div>
-      <div style={{ flex: 1, padding: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ background: colors.bgSecondary, borderRadius: "2px", padding: "8px", border: `1px solid ${colors.primaryColor}44` }}>
-            <div style={{ fontSize: "7px", fontWeight: "bold", color: colors.primaryColor, textTransform: "uppercase", marginBottom: "4px", letterSpacing: "0.5px" }}>
-              Category
-            </div>
-            <div style={{ height: "3px", background: colors.primaryColor + "55", borderRadius: "2px", marginBottom: "3px" }} />
-            <div style={{ height: "2px", background: colors.primaryColor + "33", borderRadius: "1px" }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RomanticSkeleton({ colors }: { colors: StyleProposal }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: colors.bgPrimary,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          background: `radial-gradient(circle at 50% 0%, ${colors.primaryColor}33, transparent)`,
-          padding: "10px",
-          textAlign: "center",
-          color: colors.primaryColor,
-          fontSize: "10px",
-          fontWeight: "bold",
-        }}
-      >
-        💕 Romantic 💕
-      </div>
-      <div style={{ flex: 1, padding: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} style={{ background: colors.bgSecondary, borderRadius: "6px", padding: "6px", textAlign: "center", boxShadow: `0 2px 8px ${colors.primaryColor}22` }}>
-            <div style={{ height: "3px", background: `linear-gradient(90deg, ${colors.primaryColor}66, ${colors.accentColor}66)`, borderRadius: "2px", marginBottom: "3px" }} />
-            <div style={{ height: "2px", background: colors.primaryColor + "33", borderRadius: "1px" }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function IndustrialSkeleton({ colors }: { colors: StyleProposal }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        background: colors.bgPrimary,
-        display: "flex",
-        flexDirection: "column",
-        border: `1px solid ${colors.primaryColor}33`,
-      }}
-    >
-      <div
-        style={{
-          background: colors.bgSecondary,
-          padding: "8px",
-          borderBottom: `2px solid ${colors.primaryColor}`,
-          display: "flex",
-          gap: "6px",
-          fontSize: "8px",
-          fontWeight: "bold",
-          color: colors.primaryColor,
+          fontWeight: 800,
+          letterSpacing: "0.06em",
           textTransform: "uppercase",
-          letterSpacing: "0.5px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <div>◼ Tasks</div>
-        <div>◼ Guests</div>
+        <span style={{ opacity: 0.95 }}>{proposal.emoji} {proposal.characterClass}</span>
+        <span style={{ opacity: 0.85 }}>Overview</span>
       </div>
-      <div style={{ flex: 1, padding: "8px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} style={{ background: colors.bgSecondary, border: `1px solid ${colors.primaryColor}44`, padding: "6px", borderRadius: "2px" }}>
-            <div style={{ height: "3px", background: colors.primaryColor + "44", marginBottom: "3px", borderRadius: "1px" }} />
-            <div style={{ height: "2px", background: colors.primaryColor + "22", borderRadius: "1px" }} />
+
+      <div style={{ flex: 1, padding: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+        {layout.sections.map((section, index) => (
+          <div
+            key={`${section.type}-${index}`}
+            style={{
+              flex: section.emphasis ? 1.6 : 1,
+              background: proposal.bgSecondary,
+              borderRadius: "6px",
+              border: section.accent ? `1px solid ${proposal.primaryColor}55` : "1px solid rgba(15,23,42,0.08)",
+              padding: "6px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+            }}
+          >
+            {section.type === "split" && (
+              <div style={{ display: "flex", gap: "6px", height: "100%" }}>
+                <div
+                  style={{
+                    width: "32%",
+                    background: "rgba(255,255,255,0.5)",
+                    borderRadius: "4px",
+                    padding: "4px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
+                  {Array.from({ length: section.blocks }).map((_, idx) => (
+                    <div
+                      key={`pill-${idx}`}
+                      style={{
+                        height: "6px",
+                        borderRadius: "999px",
+                        background: `${proposal.primaryColor}${idx % 2 === 0 ? "55" : "33"}`,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px" }}>
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div
+                      key={`card-${idx}`}
+                      style={{
+                        background: "rgba(255,255,255,0.72)",
+                        borderRadius: "4px",
+                        border: `1px solid ${proposal.accentColor}33`,
+                        padding: "4px",
+                      }}
+                    >
+                      <div style={{ height: "3px", background: `${proposal.accentColor}66`, borderRadius: "2px", marginBottom: "3px" }} />
+                      <div style={{ height: "2px", background: `${proposal.primaryColor}33`, borderRadius: "2px" }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {section.type === "grid" && (
+              <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={`tile-${idx}`}
+                    style={{
+                      background: "rgba(255,255,255,0.7)",
+                      borderRadius: "4px",
+                      border: `1px solid ${proposal.primaryColor}22`,
+                      padding: "4px",
+                    }}
+                  >
+                    <div style={{ height: "3px", background: `${proposal.primaryColor}55`, borderRadius: "2px", marginBottom: "3px" }} />
+                    <div style={{ height: "2px", background: `${proposal.accentColor}33`, borderRadius: "2px" }} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {section.type === "stack" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                {Array.from({ length: section.blocks + 1 }).map((_, idx) => (
+                  <div
+                    key={`line-${idx}`}
+                    style={{
+                      height: "6px",
+                      borderRadius: "999px",
+                      background: idx % 2 === 0 ? `${proposal.primaryColor}44` : `${proposal.accentColor}33`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -86,6 +86,8 @@ export function EventView() {
   const [progressTaskId, setProgressTaskId] = useState<string | null>(null);
   const [progressText, setProgressText] = useState("");
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [progressMessage, setProgressMessage] = useState("");
+  const [progressCompleted, setProgressCompleted] = useState(false);
 
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
   const theme = eventState?.uiTheme || {
@@ -217,6 +219,55 @@ export function EventView() {
     setThemeProposals([]);
     setQuestionAnswers({});
     setContextFocus([]);
+  };
+
+  useEffect(() => {
+    if (progressTaskId) {
+      setProgressText("");
+      setProgressMessage("");
+      setProgressCompleted(false);
+    }
+  }, [progressTaskId]);
+
+  const activeProgressTask =
+    progressTaskId && eventState
+      ? eventState.tasks.find((task) => task.id === progressTaskId) || null
+      : null;
+
+  const closeProgressModal = () => {
+    setProgressTaskId(null);
+    setProgressText("");
+    setProgressMessage("");
+    setProgressCompleted(false);
+  };
+
+  const handleProgressSubmit = async () => {
+    if (!eventState || !activeProgressTask) return;
+    if (!progressText.trim()) {
+      setProgressMessage("Please add a short update to continue.");
+      return;
+    }
+
+    setIsEvaluating(true);
+    try {
+      const result = await evaluateTaskProgress(
+        progressText,
+        activeProgressTask,
+        eventState.uiTheme.narrativeVoice,
+        apiKey
+      );
+      setProgressMessage(result.message);
+      setProgressCompleted(result.taskCompleted);
+      if (result.taskCompleted) {
+        completeTask(activeProgressTask.id);
+      }
+    } catch (err) {
+      setProgressMessage(
+        `Unable to evaluate progress: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   if (!isLoaded) return <div>Loading...</div>;
@@ -462,6 +513,131 @@ export function EventView() {
             reason={progressEvent.reason}
             onDone={clearProgressEvent}
           />
+        )}
+
+        {activeProgressTask && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(15,23,42,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+              zIndex: 60,
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "520px",
+                background: "rgba(255,255,255,0.9)",
+                borderRadius: "18px",
+                padding: "20px",
+                border: "1px solid rgba(226,232,240,0.9)",
+                boxShadow: "0 18px 50px rgba(15,23,42,0.25)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                <div>
+                  <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#6366f1", fontWeight: 800 }}>
+                    Progress Update
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 900, color: "#0f172a" }}>
+                    {activeProgressTask.title}
+                  </h3>
+                </div>
+                <button
+                  onClick={closeProgressModal}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    fontSize: "1.2rem",
+                    cursor: "pointer",
+                    color: "#64748b",
+                  }}
+                  aria-label="Close progress dialog"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p style={{ fontSize: "0.85rem", color: "#64748b", marginTop: 0 }}>
+                Share what you have done so far. The assistant will update the plan.
+              </p>
+
+              <textarea
+                value={progressText}
+                onChange={(e) => setProgressText(e.target.value)}
+                rows={4}
+                placeholder="Example: Confirmed 3 venue quotes and scheduled two walkthroughs."
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(99,102,241,0.3)",
+                  background: "rgba(255,255,255,0.95)",
+                  fontSize: "0.9rem",
+                  fontFamily: "inherit",
+                  resize: "vertical",
+                }}
+              />
+
+              {progressMessage && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    background: progressCompleted
+                      ? "rgba(220,252,231,0.7)"
+                      : "rgba(226,232,240,0.8)",
+                    color: progressCompleted ? "#16a34a" : "#475569",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {progressMessage}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+                <button
+                  onClick={closeProgressModal}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(148,163,184,0.5)",
+                    background: "rgba(255,255,255,0.7)",
+                    color: "#64748b",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleProgressSubmit}
+                  disabled={isEvaluating}
+                  style={{
+                    flex: 1,
+                    padding: "10px 16px",
+                    borderRadius: "999px",
+                    border: "none",
+                    background: isEvaluating
+                      ? "linear-gradient(135deg, #c7d2fe, #ddd6fe)"
+                      : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    color: isEvaluating ? "#6366f1" : "#ffffff",
+                    fontWeight: 800,
+                    cursor: isEvaluating ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isEvaluating ? "Evaluating..." : "Submit Progress"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         <CopilotSidebar

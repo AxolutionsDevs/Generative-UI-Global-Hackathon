@@ -1,18 +1,16 @@
 "use client";
 
 import { LayoutProps } from "./LayoutSelector";
-import { useTheme } from "../ThemeContext";
+import { FunctionalDashboard } from "./FunctionalDashboard";
 
-export function TropicalLayout({ eventState, onResetEvent }: LayoutProps) {
-  const theme = useTheme();
-
+export function TropicalLayout({ eventState, onTaskProgress, onToggleItem, onResetEvent }: LayoutProps) {
   return (
-    <div style={{ width: "100vw", height: "100vh", background: theme.bgPrimary, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ textAlign: "center", fontSize: "2rem", fontWeight: "bold", color: theme.primaryColor }}>
-        <div style={{ fontSize: "4rem", marginBottom: "20px" }}>🌴</div>
-        <div>{eventState.eventName} — Tropical</div>
-        <button onClick={onResetEvent} style={{ marginTop: "20px", padding: "10px 20px", background: theme.primaryColor, color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}>← Back</button>
-      </div>
-    </div>
+    <FunctionalDashboard
+      variant="tropical"
+      eventState={eventState}
+      onTaskProgress={onTaskProgress}
+      onToggleItem={onToggleItem}
+      onResetEvent={onResetEvent}
+    />
   );
 }

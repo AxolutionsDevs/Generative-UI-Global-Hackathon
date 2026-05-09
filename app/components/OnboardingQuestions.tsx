@@ -95,13 +95,10 @@ export function OnboardingQuestions({
         }
         .next-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(99,102,241,0.42); }
         .next-btn { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .q-grid {
-          display: grid;
-          grid-template-columns: 1fr;
+        .q-stack {
+          display: flex;
+          flex-direction: column;
           gap: 18px;
-        }
-        @media (min-width: 900px) {
-          .q-grid { grid-template-columns: 1fr 1.1fr; align-items: start; }
         }
       `}</style>
 
@@ -204,7 +201,13 @@ export function OnboardingQuestions({
             </p>
           </div>
 
-          <div className="q-grid">
+          <div
+            className="q-stack"
+            style={{
+              maxWidth: "720px",
+              marginRight: "auto",
+            }}
+          >
             {/* Prompt + context */}
             <div
               style={{
@@ -251,31 +254,30 @@ export function OnboardingQuestions({
               >
                 Context we still need
               </div>
-              {contextFocus.length === 0 ?
-                (
-                  <div style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 600 }}>
-                    Looks good. We will just refine the details.
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    {contextFocus.map((key) => (
-                      <div
-                        key={key}
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: "999px",
-                          background: "rgba(99,102,241,0.12)",
-                          border: "1px solid rgba(99,102,241,0.25)",
-                          fontSize: "0.75rem",
-                          fontWeight: 700,
-                          color: "#4338ca",
-                        }}
-                      >
-                        {focusLabels[key] ?? key}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {contextFocus.length === 0 ? (
+                <div style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 600 }}>
+                  Looks good. We will just refine the details.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {contextFocus.map((key) => (
+                    <div
+                      key={key}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: "999px",
+                        background: "rgba(99,102,241,0.12)",
+                        border: "1px solid rgba(99,102,241,0.25)",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        color: "#4338ca",
+                      }}
+                    >
+                      {focusLabels[key] ?? key}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Questions */}

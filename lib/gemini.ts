@@ -118,7 +118,7 @@ Rules:
 
 // ─── ONBOARDING QUESTIONS ────────────────────────────────────────────────────
 
-const QUESTIONS_SYSTEM_PROMPT = `You are EventFlow. Based on the user's event details, generate exactly 5 personalized onboarding questions to customize their planning experience.
+const QUESTIONS_SYSTEM_PROMPT = `You are EventFlow. Based on the user's event details, generate a small set of personalized onboarding questions to customize their planning experience.
 
 Return ONE valid JSON array. No markdown, no fences. Raw JSON only.
 
@@ -138,9 +138,11 @@ Schema:
 ]
 
 Rules:
-- Exactly 5 questions
+- 4 to 7 questions (never fewer than 4, never more than 7)
 - SPECIFIC to the event type, size, and stated goals — not generic
-- Mix: at least 2 choice questions (3-4 options each); the rest can be scale, text, number, or date
+- Prefer easy-to-answer formats: choice, scale, number, or date
+- Use text only when absolutely necessary (max 1 text question)
+- Include at least 3 choice questions (3-4 options each)
 - Cover: event formality, venue preference, style aesthetic, budget flexibility, DIY vs full-service
 - Tone: conversational, encouraging, exciting
 - Options must be meaningful and mutually exclusive
